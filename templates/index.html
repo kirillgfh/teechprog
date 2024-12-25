@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Аудио-редактор</title>
+    <!-- Подключение Bootstrap через CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Фон с эффектом дождя */
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+            color: white;
+            transition: background 10s ease-in-out;
+        }
+        .rain-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            z-index: -1;
+            transition: background 10s ease-in-out;
+        }
+        .rain {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            overflow: hidden;
+        }
+        .drop {
+            position: absolute;
+            width: 1px;
+            height: 80px;
+            background: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.5));
+            animation: rain 1s linear infinite;
+        }
+        @keyframes rain {
+            0% {
+                transform: translateY(-100%);
+            }
+            100% {
+                transform: translateY(100vh);
+            }
+        }
+        .container {
+            margin-top: 50px;
+            position: relative;
+            z-index: 1;
+        }
+        .drop-zone {
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .drop-zone.dragover {
+            border-color: #007bff;
+            background-color: rgba(0, 123, 255, 0.1);
+        }
+        .drop-zone:hover {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+        .settings-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+        }
+        .settings-row > div {
+            flex: 1;
+        }
+        .player-section {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #4a90e2, #87ceeb); /* Менее токсичный фон */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        .player-section audio {
+            width: 80%;
+            max-width: 600px;
+            margin-top: 20px;
+        }
+        .player-section a {
+            margin-top: 20px;
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        .player-section a:hover {
+            background-color: #0056b3;
+        }
+        .player-section .back-button {
+            margin-top: 20px;
+            background-color: #ff4d4d;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        .player-section .back-button:hover {
+            background-color: #cc0000;
+        }
+        .slider-value {
+            display: inline-block;
+            margin-left: 10px;
+            font-weight: bold;
+        }
+        .loading-spinner {
+            display: none;
+            margin-top: 20px;
+        }
+        .loading-spinner .spinner-border {
+            width: 3rem;
+            height: 3rem;
+            color: #007bff;
+        }
+
+        /* Анимация восходящего солнца */
+        .sunrise-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #4a90e2, #87ceeb); /* Менее токсичный фон */
+            z-index: -1;
+            overflow: hidden;
+            transition: background 10s ease-in-out;
+        }
+        .sun {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(45deg, #ffcc00, #ff7e5f);
+            border-radius: 50%;
+            bottom: 0;
+            left: 0;
+            animation: rise 10s ease-in-out forwards;
+            box-shadow: 0 0 20px rgba(255, 204, 0, 0.8);
+        }
+        @keyframes rise {
+            0% {
+                bottom: 0;
+                left: 0;
+                background: linear-gradient(45deg, #ff4500, #ffcc00);
+            }
+            50% {
+                background: linear-gradient(45deg, #ffcc00, #ff7e5f);
+            }
+            100% {
+                bottom: 80%;
+                left: 80%;
+                background: linear-gradient(45deg, #ffcc00, #ff7e5f);
+            }
+        }
+
+        /* Анимация падающих музыкальных ключей */
+        .music-note {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" fill="white"/></svg>');
+            background-size: cover;
+            animation: fall 5s linear infinite;
+        }
+        @keyframes fall {
+            0% {
+                transform: translateY(-100%) rotate(0deg);
+            }
+            100% {
+                transform: translateY(100vh) rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Фон с эффектом дождя -->
+    <div class="rain-background">
+        <div class="rain" id="rain"></div>
+    </div>
+
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">Аудио-редактор</h1>
+
+        <!-- Загрузка файла -->
+        <div id="upload-section">
+            <div class="drop-zone" id="drop-zone" ondragover="event.preventDefault()" ondrop="dropHandler(event)">
+                <p>Перетащите аудиофайл сюда или нажмите, чтобы выбрать файл</p>
+                <input type="file" id="file-input" style="display: none;" accept="audio/*">
+                <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">Выбрать файл</button>
+            </div>
+            <div class="loading-spinner text-center" id="upload-spinner">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Загрузка...</span>
+                </div>
+                <p>Загрузка файла...</p>
+            </div>
+        </div>
+
+        <!-- Настройки аудио -->
+        <div id="settings-section" class="mt-4" style="display: none;">
+            <h2>Настройки аудио</h2>
+            <form id="settings-form">
+                <div class="settings-row">
+                    <div>
+                        <label for="volume" class="form-label">Громкость (дБ):</label>
+                        <input type="range" class="form-range" id="volume" name="volume" min="-20" max="20" step="0.1" value="0">
+                        <span class="slider-value" id="volume-value">0</span>
+                    </div>
+                    <div>
+                        <label for="speed" class="form-label">Скорость:</label>
+                        <input type="range" class="form-range" id="speed" name="speed" min="0.5" max="2" step="0.1" value="1">
+                        <span class="slider-value" id="speed-value">1</span>
+                    </div>
+                </div>
+                <hr>
+                <div class="settings-row">
+                    <div>
+                        <label for="pitch" class="form-label">Тональность (полутона):</label>
+                        <input type="range" class="form-range" id="pitch" name="pitch" min="-12" max="12" step="0.1" value="0">
+                        <span class="slider-value" id="pitch-value">0</span>
+                    </div>
+                    <div>
+                        <label for="start_trim" class="form-label">Начало обрезки (мс):</label>
+                        <input type="range" class="form-range" id="start_trim" name="start_trim" min="0" max="5000" step="100" value="0">
+                        <span class="slider-value" id="start_trim-value">0</span>
+                    </div>
+                </div>
+                <hr>
+                <div class="settings-row">
+                    <div>
+                        <label for="end_trim" class="form-label">Конец обрезки (мс):</label>
+                        <input type="range" class="form-range" id="end_trim" name="end_trim" min="0" max="5000" step="100" value="0">
+                        <span class="slider-value" id="end_trim-value">0</span>
+                    </div>
+                    <div>
+                        <label for="add_silence_start" class="form-label">Тишина в начале (мс):</label>
+                        <input type="range" class="form-range" id="add_silence_start" name="add_silence_start" min="0" max="5000" step="100" value="0">
+                        <span class="slider-value" id="add_silence_start-value">0</span>
+                    </div>
+                </div>
+                <hr>
+                <div class="settings-row">
+                    <div>
+                        <label for="add_silence_end" class="form-label">Тишина в конце (мс):</label>
+                        <input type="range" class="form-range" id="add_silence_end" name="add_silence_end" min="0" max="5000" step="100" value="0">
+                        <span class="slider-value" id="add_silence_end-value">0</span>
+                    </div>
+                    <div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="echo_effect" name="echo_effect">
+                            <label class="form-check-label" for="echo_effect">Эффект эха</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="normalize_audio" name="normalize_audio">
+                            <label class="form-check-label" for="normalize_audio">Нормализация</label>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-success mt-3">Обработать аудио</button>
+            </form>
+            <div class="loading-spinner text-center" id="process-spinner">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Обработка...</span>
+                </div>
+                <p>Обработка аудио...</p>
+            </div>
+        </div>
+
+        <!-- Проигрыватель аудио -->
+        <div id="player-section" class="player-section" style="display: none;">
+            <!-- Анимация восходящего солнца -->
+            <div class="sunrise-background">
+                <div class="sun"></div>
+                <!-- Падающие музыкальные ключи -->
+                <div class="rain" id="rain-on-sun"></div>
+            </div>
+            <h2>Ваш обработанный аудиофайл</h2>
+            <audio id="audio-player" controls></audio>
+            <a id="download-link" class="btn btn-primary">Скачать аудиофайл</a>
+            <a href="/" class="back-button mt-3">Вернуться к главному экрану</a>
+        </div>
+    </div>
+
+    <!-- Подключение Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Создание эффекта дождя
+        const rain = document.getElementById('rain');
+        function createRain() {
+            const drop = document.createElement('div');
+            drop.classList.add('drop');
+            drop.style.left = Math.random() * 100 + 'vw';
+            drop.style.animationDuration = Math.random() * 1 + 0.5 + 's';
+            rain.appendChild(drop);
+            setTimeout(() => {
+                drop.remove();
+            }, 2000);
+        }
+        setInterval(createRain, 50);
+
+        // Создание эффекта падающих музыкальных ключей
+        function createMusicNotes() {
+            const note = document.createElement('div');
+            note.classList.add('music-note');
+            note.style.left = Math.random() * 100 + 'vw';
+            note.style.animationDuration = Math.random() * 5 + 3 + 's';
+            rain.appendChild(note);
+            setTimeout(() => {
+                note.remove();
+            }, 8000);
+        }
+        setInterval(createMusicNotes, 300);
+
+        // Создание эффекта падающих музыкальных ключей на странице с солнцем
+        const rainOnSun = document.getElementById('rain-on-sun');
+        function createMusicNotesOnSun() {
+            const note = document.createElement('div');
+            note.classList.add('music-note');
+            note.style.left = Math.random() * 100 + 'vw';
+            note.style.animationDuration = Math.random() * 5 + 3 + 's';
+            rainOnSun.appendChild(note);
+            setTimeout(() => {
+                note.remove();
+            }, 8000);
+        }
+        setInterval(createMusicNotesOnSun, 300);
+
+        let file_path = null;
+        let unique_id = null;
+        let original_filename = null;
+
+        // Обработчик перетаскивания файла
+        function dropHandler(event) {
+            event.preventDefault();
+            const file = event.dataTransfer.files[0];
+            uploadFile(file);
+        }
+
+        // Обработчик выбора файла через кнопку
+        document.getElementById('file-input').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            uploadFile(file);
+        });
+
+        // Загрузка файла на сервер
+        function uploadFile(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            document.getElementById('upload-spinner').style.display = 'block'; // Показываем анимацию загрузки
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            }).then(response => response.json())
+              .then(data => {
+                  document.getElementById('upload-spinner').style.display = 'none'; // Скрываем анимацию загрузки
+                  if (data.error) {
+                      alert(data.error);
+                  } else {
+                      file_path = data.file_path;
+                      unique_id = data.unique_id;
+                      original_filename = data.original_filename;
+                      document.getElementById('settings-section').style.display = 'block';
+                  }
+              });
+        }
+
+        // Обработчик отправки настроек
+        document.getElementById('settings-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const volume = document.getElementById('volume').value;
+            const speed = document.getElementById('speed').value;
+            const pitch = document.getElementById('pitch').value;
+            const start_trim = document.getElementById('start_trim').value;
+            const end_trim = document.getElementById('end_trim').value;
+            const add_silence_start = document.getElementById('add_silence_start').value;
+            const add_silence_end = document.getElementById('add_silence_end').value;
+            const echo_effect = document.getElementById('echo_effect').checked;
+            const normalize_audio = document.getElementById('normalize_audio').checked;
+
+            document.getElementById('process-spinner').style.display = 'block'; // Показываем анимацию обработки
+            fetch('/process', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    file_path: file_path,
+                    unique_id: unique_id,
+                    original_filename: original_filename,
+                    volume: volume,
+                    speed: speed,
+                    pitch: pitch,
+                    start_trim: start_trim,
+                    end_trim: end_trim,
+                    add_silence_start: add_silence_start,
+                    add_silence_end: add_silence_end,
+                    echo_effect: echo_effect,
+                    normalize_audio: normalize_audio
+                })
+            }).then(response => response.json())
+              .then(data => {
+                  document.getElementById('process-spinner').style.display = 'none'; // Скрываем анимацию обработки
+                  if (data.processed_file_path) {
+                      const player = document.getElementById('audio-player');
+                      const downloadLink = document.getElementById('download-link');
+                      player.src = `/download/${data.processed_file_path}?original_filename=${encodeURIComponent(data.original_filename)}`;
+                      downloadLink.href = `/download/${data.processed_file_path}?original_filename=${encodeURIComponent(data.original_filename)}`;
+                      document.getElementById('player-section').style.display = 'flex';
+                      document.getElementById('settings-section').style.display = 'none';
+
+                      // Плавный переход от дождя к солнцу
+                      document.body.style.background = 'linear-gradient(135deg, #4a90e2, #87ceeb)';
+                      document.querySelector('.rain-background').style.background = 'linear-gradient(135deg, #4a90e2, #87ceeb)';
+                  }
+              });
+        });
+
+        // Подсветка зоны перетаскивания
+        const dropZone = document.getElementById('drop-zone');
+        dropZone.addEventListener('dragover', () => dropZone.classList.add('dragover'));
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+
+        // Отображение значения ползунка
+        const sliders = document.querySelectorAll('input[type="range"]');
+        sliders.forEach(slider => {
+            const valueSpan = document.getElementById(`${slider.id}-value`);
+            slider.addEventListener('input', () => {
+                valueSpan.textContent = slider.value;
+            });
+        });
+    </script>
+</body>
+</html>
